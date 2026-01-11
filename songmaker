@@ -4,7 +4,7 @@
     {
       "parameters": {
         "formTitle": "Create a Song from you LinkedIn ",
-        "formDescription": "add your LinkedIn profile and we will create a 30 second song about you\n\nIf there is an error it is likely due to the number of credits, I will add more :) ",
+        "formDescription": "Copy and paste your LinkedIn profile and we will create a 30 second song about you\n\nIf there is an error it is likely due to the number of credits, I will add more :) ",
         "formFields": {
           "values": [
             {
@@ -33,21 +33,21 @@
         288,
         -272
       ],
-      "id": "c6740a7f-6071-4891-a4fc-69d46e0cc396",
+      "id": "56cec91d-b24a-4071-bae4-3ff89ef984c7",
       "name": "On form submission",
-      "webhookId": "312af03c-8c7a-4153-aefe-3a300cd24bc5"
+      "webhookId": "89a63d22-68e0-4fc3-b036-236872096ac0"
     },
     {
       "parameters": {
-        "content": "## Starting Example I found\n\nhttps://n8n.io/workflows/7793-generate-ai-music-with-the-elevenlabs-api-and-upload-to-google-drive/"
+        "content": "https://n8n.io/workflows/7793-generate-ai-music-with-the-elevenlabs-api-and-upload-to-google-drive/"
       },
       "type": "n8n-nodes-base.stickyNote",
       "position": [
-        720,
-        -480
+        1472,
+        416
       ],
       "typeVersion": 1,
-      "id": "7a0d0171-a39b-4475-a72f-fe6a2f0a4dde",
+      "id": "99bb88df-c0d5-41f8-ac14-07f988a65c2e",
       "name": "Sticky Note"
     },
     {
@@ -61,7 +61,7 @@
         "responses": {
           "values": [
             {
-              "content": "=Looking at this copy and paste of this linkdin profile {{ $json['LinkedIn '][0] }} cclean up the data so its just relevant to the person and return a prompt for a song about the person. "
+              "content": "=Analyze the following LinkedIn profile text and summarize who {{ $('On form submission').item.json.Name }} is and the work they do, for the purpose of creating a song about them.\n\nReturn:\n– a 1–2 sentence summary of {{ $('On form submission').item.json.Name }} that includes their focus and the kind of work they do\n– the problems they work on or outcomes they drive\n– the core themes of their work (e.g. builder, operator, creator, leader, problem-solver)\n– the emotional tone the song should convey\n– a short musical vibe recommendation\n\nUse {{ $('On form submission').item.json.Name }}’s name naturally in the summary.\nDo not write lyrics.\nDo not mention LinkedIn, resumes, job titles, or company names.\nKeep the output concise, human, and inspiring.\n\nProfile text:\n{{ $('On form submission').item.json['LinkedIn '] }} "
             }
           ]
         },
@@ -71,10 +71,10 @@
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 2.1,
       "position": [
-        736,
+        720,
         -272
       ],
-      "id": "788d57b7-36a2-450f-a436-4ba5f1ba46c5",
+      "id": "cbcb4e07-6fea-46d8-8e9d-d84899361f2d",
       "name": "Create the prompt from LinkedIn",
       "credentials": {
         "openAiApi": {
@@ -90,7 +90,7 @@
             {
               "id": "c19ecc1d-a935-42ed-8d8a-bf6feda22be0",
               "name": "ELEVENLABS_API",
-              "value": "Enter API Key",
+              "value": "Enter your Key",
               "type": "string"
             }
           ]
@@ -100,10 +100,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1088,
-        -272
+        544,
+        -48
       ],
-      "id": "3fb33d18-bb04-4291-993a-8e8e1a003c2e",
+      "id": "2b1c8421-b5e9-4ccd-be70-4f88b2a3db51",
       "name": "Add API Key"
     },
     {
@@ -124,7 +124,7 @@
           "parameters": [
             {
               "name": "prompt",
-              "value": "=Create a song about this person "
+              "value": "={{ $('Create the prompt from LinkedIn').item.json.output[0].content[0].text }}"
             },
             {
               "name": "output_format",
@@ -147,17 +147,17 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        1312,
-        -272
+        720,
+        0
       ],
-      "id": "8984bb61-90b9-43b6-98c3-db8c9cfe0525",
+      "id": "f0dde460-6242-4826-8f40-01b26b21c717",
       "name": "Create Song"
     },
     {
       "parameters": {
         "operation": "completion",
         "completionTitle": "Here you go",
-        "completionMessage": "=https://n8n/files/songs/{{ $node[\"Song Name\"].json.fileName }}\nThanks for submitting!  \n<br><br>\n<a href=\"https://n8n.srv851239.hstgr.cloud/files/songs/{{ $node[\"Song Name\"].json.fileName }}m\" target=\"_blank\" rel=\"noopener noreferrer\">\nClick here for the song →\n</a>",
+        "completionMessage": "=\nThanks for submitting!  \n<br><br>\n<a href=\"https://n8n.srv851239.hstgr.cloud/files/songs/{{ $node[\"Edit Fields\"].json.fileName }}\" target=\"_blank\" rel=\"noopener noreferrer\">\nClick here for the song →\n</a>",
         "options": {
           "customCss": ":root {\n  --font-family: ui-sans-serif, system-ui, -apple-system, \"Segoe UI\", Inter, \"Open Sans\", sans-serif;\n  --font-weight-normal: 420;\n  --font-weight-bold: 700;\n\n  --font-size-body: 14px;\n  --font-size-label: 13px;\n  --font-size-input: 15px;\n  --font-size-header: 24px;\n  --font-size-paragraph: 14px;\n  --font-size-link: 13px;\n\n  /* Bright, clean base */\n  --color-background: linear-gradient(180deg, #f7f8ff 0%, #ffffff 55%, #fff7f5 100%);\n  --color-card-bg: #ffffff;\n  --color-card-border: rgba(30, 41, 59, 0.10);\n  --color-card-shadow: rgba(30, 41, 59, 0.10);\n\n  --color-header: #0f172a;\n  --color-header-subtext: #475569;\n  --color-label: #0f172a;\n  --color-input-text: #0f172a;\n\n  --color-input-border: rgba(15, 23, 42, 0.12);\n  --color-focus-border: #7d6aff;\n\n  --color-link: #475569;\n  --color-html-text: #0f172a;\n  --color-html-link: #ff6d5a;\n\n  /* “Signature” accent */\n  --color-submit-btn-bg: #7d6aff;\n  --color-submit-btn-text: #ffffff;\n\n  --color-error: #e11d48;\n  --color-required: #ff6d5a;\n\n  --border-radius-card: 18px;\n  --border-radius-input: 14px;\n  --card-border-radius: 18px;\n\n  --padding-card: 26px;\n  --padding-form-input: 14px;\n\n  --container-width: 520px;\n  --submit-btn-height: 52px;\n\n  --box-shadow-card: 0px 18px 40px -22px var(--color-card-shadow);\n  --opacity-placeholder: 0.55;\n}\n"
         }
@@ -165,26 +165,26 @@
       "type": "n8n-nodes-base.form",
       "typeVersion": 2.3,
       "position": [
-        1968,
-        -272
+        1312,
+        192
       ],
-      "id": "24cd3714-afa8-4f4e-9ee0-b70ee45b49bd",
+      "id": "d6f3e53f-7be8-4ecf-bf12-0b1bb39d50d9",
       "name": "Ending Form",
-      "webhookId": "f88bc80d-bca2-4d6e-956f-5ccc9b926c47"
+      "webhookId": "d619e53b-4fb3-419b-8843-3b3454aa9413"
     },
     {
       "parameters": {
         "operation": "write",
-        "fileName": "={{ '/files/songs/' + $node[\"Song Name\"].json.fileName }}",
+        "fileName": "={{ '/files/songs/' + $node[\"Edit Fields\"].json.fileName }}",
         "options": {}
       },
       "type": "n8n-nodes-base.readWriteFile",
       "typeVersion": 1,
       "position": [
-        1536,
-        -272
+        880,
+        192
       ],
-      "id": "a38c23a6-4ad3-46d0-a427-14eee2fa4af1",
+      "id": "c0843fe8-a64c-462e-9c2b-1024277c2fde",
       "name": "Read/Write Files from Disk"
     },
     {
@@ -196,41 +196,28 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        512,
+        496,
         -272
       ],
-      "id": "c79d5738-eed1-433f-8615-ac11389b08eb",
-      "name": "Song Name"
+      "id": "04a0ffaf-f3ae-4894-adec-2a7aaa828880",
+      "name": "Edit Fields"
     },
     {
       "parameters": {
-        "content": "## Option 2\n\nEasier method would be to just use google drive to save and share the files as well"
-      },
-      "type": "n8n-nodes-base.stickyNote",
-      "position": [
-        1472,
-        -448
-      ],
-      "typeVersion": 1,
-      "id": "b4547c94-851a-4abf-a478-95075f2e4d58",
-      "name": "Sticky Note1"
-    },
-    {
-      "parameters": {
-        "sendTo": "={($json.email}}",
+        "sendTo": "={{ $('On form submission').item.json.Email }}",
         "subject": "Your Song Is Ready",
-        "message": "($json.Name}",
+        "message": "=Hi  {{ $('On form submission').item.json.Name}}\n\nYour Song Link https://n8n.srv851239.hstgr.cloud/files/songs/{{ $node[\"Edit Fields\"].json.fileName }}",
         "options": {}
       },
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.2,
       "position": [
-        1776,
-        -400
+        1536,
+        -176
       ],
-      "id": "90cd2ca4-2d87-4e71-9061-38faa49ede4b",
+      "id": "17aa3889-db65-43ce-b566-f9d458901331",
       "name": "Send a message",
-      "webhookId": "6823a779-6b1c-44f1-a164-9c0854d76e54",
+      "webhookId": "8cb6f51e-91b7-41b8-a4d1-b1332db7b6df",
       "credentials": {
         "gmailOAuth2": {
           "id": "yytgk9cpAHYuY2zS",
@@ -245,7 +232,7 @@
       "main": [
         [
           {
-            "node": "Song Name",
+            "node": "Edit Fields",
             "type": "main",
             "index": 0
           }
@@ -289,24 +276,19 @@
       "main": [
         [
           {
-            "node": "Send a message",
+            "node": "Ending Form",
             "type": "main",
             "index": 0
           },
           {
-            "node": "Ending Form",
+            "node": "Send a message",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Ending Form": {
-      "main": [
-        []
-      ]
-    },
-    "Song Name": {
+    "Edit Fields": {
       "main": [
         [
           {
@@ -321,17 +303,29 @@
       "main": [
         []
       ]
+    },
+    "Ending Form": {
+      "main": [
+        []
+      ]
     }
   },
   "active": false,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "6ac9b362-9885-4cf8-8bd5-2a4f1634b747",
+  "versionId": "ebe30f00-b462-44a7-b9e4-879b88072447",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "487038707b640ff3b269901b77c36589df940a388b12d4bcb9a553864daa4723"
   },
-  "id": "4XxkwVAwWQHZyHLn",
-  "tags": []
+  "id": "rSINschAewoF0Ncw",
+  "tags": [
+    {
+      "updatedAt": "2026-01-02T17:41:38.626Z",
+      "createdAt": "2026-01-02T17:41:38.626Z",
+      "id": "tHlQwyfjmPT5H1oz",
+      "name": "Shareable"
+    }
+  ]
 }
