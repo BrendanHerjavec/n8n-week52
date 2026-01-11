@@ -1,0 +1,337 @@
+{
+  "name": "Song Maker Week 1 Public",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Create a Song from you LinkedIn ",
+        "formDescription": "add your LinkedIn profile and we will create a 30 second song about you\n\nIf there is an error it is likely due to the number of credits, I will add more :) ",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Name",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "LinkedIn ",
+              "fieldType": "textarea",
+              "placeholder": "Copy and paste your LinkedIn Page",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Email",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {
+          "customCss": ":root {\n  --font-family: ui-sans-serif, system-ui, -apple-system, \"Segoe UI\", Inter, \"Open Sans\", sans-serif;\n  --font-weight-normal: 420;\n  --font-weight-bold: 700;\n\n  --font-size-body: 14px;\n  --font-size-label: 13px;\n  --font-size-input: 15px;\n  --font-size-header: 24px;\n  --font-size-paragraph: 14px;\n  --font-size-link: 13px;\n\n  /* Bright, clean base */\n  --color-background: linear-gradient(180deg, #f7f8ff 0%, #ffffff 55%, #fff7f5 100%);\n  --color-card-bg: #ffffff;\n  --color-card-border: rgba(30, 41, 59, 0.10);\n  --color-card-shadow: rgba(30, 41, 59, 0.10);\n\n  --color-header: #0f172a;\n  --color-header-subtext: #475569;\n  --color-label: #0f172a;\n  --color-input-text: #0f172a;\n\n  --color-input-border: rgba(15, 23, 42, 0.12);\n  --color-focus-border: #7d6aff;\n\n  --color-link: #475569;\n  --color-html-text: #0f172a;\n  --color-html-link: #ff6d5a;\n\n  /* “Signature” accent */\n  --color-submit-btn-bg: #7d6aff;\n  --color-submit-btn-text: #ffffff;\n\n  --color-error: #e11d48;\n  --color-required: #ff6d5a;\n\n  --border-radius-card: 18px;\n  --border-radius-input: 14px;\n  --card-border-radius: 18px;\n\n  --padding-card: 26px;\n  --padding-form-input: 14px;\n\n  --container-width: 520px;\n  --submit-btn-height: 52px;\n\n  --box-shadow-card: 0px 18px 40px -22px var(--color-card-shadow);\n  --opacity-placeholder: 0.55;\n}\n"
+        }
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.3,
+      "position": [
+        288,
+        -272
+      ],
+      "id": "c6740a7f-6071-4891-a4fc-69d46e0cc396",
+      "name": "On form submission",
+      "webhookId": "312af03c-8c7a-4153-aefe-3a300cd24bc5"
+    },
+    {
+      "parameters": {
+        "content": "## Starting Example I found\n\nhttps://n8n.io/workflows/7793-generate-ai-music-with-the-elevenlabs-api-and-upload-to-google-drive/"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        720,
+        -480
+      ],
+      "typeVersion": 1,
+      "id": "7a0d0171-a39b-4475-a72f-fe6a2f0a4dde",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "chatgpt-4o-latest",
+          "mode": "list",
+          "cachedResultName": "CHATGPT-4O-LATEST"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=Looking at this copy and paste of this linkdin profile {{ $json['LinkedIn '][0] }} cclean up the data so its just relevant to the person and return a prompt for a song about the person. "
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        736,
+        -272
+      ],
+      "id": "788d57b7-36a2-450f-a436-4ba5f1ba46c5",
+      "name": "Create the prompt from LinkedIn",
+      "credentials": {
+        "openAiApi": {
+          "id": "VAztdGuSQn755XI1",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c19ecc1d-a935-42ed-8d8a-bf6feda22be0",
+              "name": "ELEVENLABS_API",
+              "value": "Enter API Key",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1088,
+        -272
+      ],
+      "id": "3fb33d18-bb04-4291-993a-8e8e1a003c2e",
+      "name": "Add API Key"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.elevenlabs.io/v1/music/compose",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "xi-api-key",
+              "value": "={{ $json.ELEVENLABS_API }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "prompt",
+              "value": "=Create a song about this person "
+            },
+            {
+              "name": "output_format",
+              "value": "mp3_44100_128"
+            },
+            {
+              "name": "music_length_ms",
+              "value": "30000"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1312,
+        -272
+      ],
+      "id": "8984bb61-90b9-43b6-98c3-db8c9cfe0525",
+      "name": "Create Song"
+    },
+    {
+      "parameters": {
+        "operation": "completion",
+        "completionTitle": "Here you go",
+        "completionMessage": "=https://n8n/files/songs/{{ $node[\"Song Name\"].json.fileName }}\nThanks for submitting!  \n<br><br>\n<a href=\"https://n8n.srv851239.hstgr.cloud/files/songs/{{ $node[\"Song Name\"].json.fileName }}m\" target=\"_blank\" rel=\"noopener noreferrer\">\nClick here for the song →\n</a>",
+        "options": {
+          "customCss": ":root {\n  --font-family: ui-sans-serif, system-ui, -apple-system, \"Segoe UI\", Inter, \"Open Sans\", sans-serif;\n  --font-weight-normal: 420;\n  --font-weight-bold: 700;\n\n  --font-size-body: 14px;\n  --font-size-label: 13px;\n  --font-size-input: 15px;\n  --font-size-header: 24px;\n  --font-size-paragraph: 14px;\n  --font-size-link: 13px;\n\n  /* Bright, clean base */\n  --color-background: linear-gradient(180deg, #f7f8ff 0%, #ffffff 55%, #fff7f5 100%);\n  --color-card-bg: #ffffff;\n  --color-card-border: rgba(30, 41, 59, 0.10);\n  --color-card-shadow: rgba(30, 41, 59, 0.10);\n\n  --color-header: #0f172a;\n  --color-header-subtext: #475569;\n  --color-label: #0f172a;\n  --color-input-text: #0f172a;\n\n  --color-input-border: rgba(15, 23, 42, 0.12);\n  --color-focus-border: #7d6aff;\n\n  --color-link: #475569;\n  --color-html-text: #0f172a;\n  --color-html-link: #ff6d5a;\n\n  /* “Signature” accent */\n  --color-submit-btn-bg: #7d6aff;\n  --color-submit-btn-text: #ffffff;\n\n  --color-error: #e11d48;\n  --color-required: #ff6d5a;\n\n  --border-radius-card: 18px;\n  --border-radius-input: 14px;\n  --card-border-radius: 18px;\n\n  --padding-card: 26px;\n  --padding-form-input: 14px;\n\n  --container-width: 520px;\n  --submit-btn-height: 52px;\n\n  --box-shadow-card: 0px 18px 40px -22px var(--color-card-shadow);\n  --opacity-placeholder: 0.55;\n}\n"
+        }
+      },
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.3,
+      "position": [
+        1968,
+        -272
+      ],
+      "id": "24cd3714-afa8-4f4e-9ee0-b70ee45b49bd",
+      "name": "Ending Form",
+      "webhookId": "f88bc80d-bca2-4d6e-956f-5ccc9b926c47"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{ '/files/songs/' + $node[\"Song Name\"].json.fileName }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        1536,
+        -272
+      ],
+      "id": "a38c23a6-4ad3-46d0-a427-14eee2fa4af1",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"fileName\": \"={{ (($json.Name || 'song').toString().split(' ').join('_')) + '-' + $execution.id + '.mp3' }}\"\n}\n\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        512,
+        -272
+      ],
+      "id": "c79d5738-eed1-433f-8615-ac11389b08eb",
+      "name": "Song Name"
+    },
+    {
+      "parameters": {
+        "content": "## Option 2\n\nEasier method would be to just use google drive to save and share the files as well"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1472,
+        -448
+      ],
+      "typeVersion": 1,
+      "id": "b4547c94-851a-4abf-a478-95075f2e4d58",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "sendTo": "={($json.email}}",
+        "subject": "Your Song Is Ready",
+        "message": "($json.Name}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1776,
+        -400
+      ],
+      "id": "90cd2ca4-2d87-4e71-9061-38faa49ede4b",
+      "name": "Send a message",
+      "webhookId": "6823a779-6b1c-44f1-a164-9c0854d76e54",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "yytgk9cpAHYuY2zS",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Song Name",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create the prompt from LinkedIn": {
+      "main": [
+        [
+          {
+            "node": "Add API Key",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add API Key": {
+      "main": [
+        [
+          {
+            "node": "Create Song",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Song": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Ending Form",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ending Form": {
+      "main": [
+        []
+      ]
+    },
+    "Song Name": {
+      "main": [
+        [
+          {
+            "node": "Create the prompt from LinkedIn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "6ac9b362-9885-4cf8-8bd5-2a4f1634b747",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "487038707b640ff3b269901b77c36589df940a388b12d4bcb9a553864daa4723"
+  },
+  "id": "4XxkwVAwWQHZyHLn",
+  "tags": []
+}
