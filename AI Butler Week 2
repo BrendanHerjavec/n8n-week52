@@ -1,0 +1,367 @@
+{
+  "name": "My own Jeeves Week 2",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// This runs once and receives all incoming items in `items`\nreturn [\n  {\n    json: {\n      rows: items.map(i => i.json),        // all rows as an array\n      rowCount: items.length,\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        848,
+        -528
+      ],
+      "id": "5450fd0f-6c6c-4dfb-aa75-e7e7f40f0efb",
+      "name": "Combine the Emails"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "v9ZICLHcbj2EvDMF",
+          "mode": "list",
+          "cachedResultName": "Emails",
+          "cachedResultUrl": "/projects/3VxMb7DnyLexjS3H/datatables/v9ZICLHcbj2EvDMF"
+        },
+        "matchType": "allConditions",
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        624,
+        -528
+      ],
+      "id": "23f9620f-992d-446d-b7d6-42397c2ddbb6",
+      "name": "Get the Emails",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "v9ZICLHcbj2EvDMF",
+          "mode": "list",
+          "cachedResultName": "Emails",
+          "cachedResultUrl": "/projects/3VxMb7DnyLexjS3H/datatables/v9ZICLHcbj2EvDMF"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Subject": "={{ $json.Subject }}",
+            "Snippet": "={{ $json.snippet }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Subject",
+              "displayName": "Subject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Snippet",
+              "displayName": "Snippet",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        400,
+        -528
+      ],
+      "id": "242ed385-360a-407f-b6e9-fa02bc91cd0d",
+      "name": "Save the Emails"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "limit": 5,
+        "filters": {
+          "receivedAfter": "={{ new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString() }}"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        176,
+        -528
+      ],
+      "id": "bf61cbeb-d5a7-4e2b-8db8-7925a291325c",
+      "name": "Get Emails From Gmail",
+      "webhookId": "1684f969-f465-49df-ad7a-e656e92fbd25",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "yytgk9cpAHYuY2zS",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-3.5-turbo",
+          "mode": "list",
+          "cachedResultName": "GPT-3.5-TURBO"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=You are “Jeeves”, a polished, dry-humoured British butler speaking aloud to your employer, Mister Brendan.\n\nYou will receive JSON containing email entries. Treat the JSON as private notes and never reference it directly.\n\nMANDATORY OPENING (must follow this structure exactly):\nYou must begin with:\n“Good morning, Mister Brendan. It’s Jeeves.”\n\nImmediately follow with one short, understated British remark about the inbox\n(for example: “A rather lively inbox today,” or “The inbox has had a bit of a wobble,” or “A mixed bag this morning, I’m afraid.”)\n\nIMPORTANT BEHAVIOUR RULES:\n- Do NOT go through emails one by one.\n- Do NOT enumerate or list.\n- Do NOT quote subjects or mention ids.\n- Do NOT use phrases like “first”, “next”, “regarding this message”, or similar.\n- Summarize by theme, not by individual item.\n- Deduplicate repeats silently.\n\nWHAT TO SPEAK ABOUT:\n- Briefly describe the overall state of the inbox.\n- Mention only what actually matters:\n  - meetings or scheduled events\n  - messages awaiting a reply\n  - payments or financial notices\n- Ignore marketing, flyers, and newsletters unless urgent.\n- Never contradict yourself.\n\nOUTPUT RULES (critical):\n- Plain spoken text only.\n- One short paragraph, 3 to 6 sentences total.\n- No bullets, no headings, no line breaks.\n- Natural conversational flow, suitable for text-to-speech.\n- Dry, subtle British wit — professional, not theatrical.\n\n\nData:\n{{ JSON.stringify($json.rows, null, 2) }}\n"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        1072,
+        -528
+      ],
+      "id": "01848936-bb56-4b23-9be2-abdaf72becfb",
+      "name": "Build the Script",
+      "credentials": {
+        "openAiApi": {
+          "id": "VAztdGuSQn755XI1",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"fileName\": \"{{ ('call_' + $now.toFormat('yyyyLLdd_HHmmss') + '.mp3').trim() }}\",\n  \"filePath\": \"{{ ('/files/songs/call_' + $now.toFormat('yyyyLLdd_HHmmss') + '.mp3').trim() }}\",\n  \"publicUrl\": \"{{ ('https://n8n.srv851239.hstgr.cloud/files/songs/call_' + $now.toFormat('yyyyLLdd_HHmmss') + '.mp3').trim() }}\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1424,
+        -528
+      ],
+      "id": "ec7708e7-9b2c-495b-82cf-29760b84155c",
+      "name": "Create the Call File"
+    },
+    {
+      "parameters": {
+        "resource": "speech",
+        "voice": {
+          "__rl": true,
+          "value": "goT3UYdM9bhm0n2lmKQx",
+          "mode": "id"
+        },
+        "text": "={{ $('Build the Script').item.json.output[0].content[0].text }}",
+        "additionalOptions": {},
+        "requestOptions": {}
+      },
+      "type": "@elevenlabs/n8n-nodes-elevenlabs.elevenLabs",
+      "typeVersion": 1,
+      "position": [
+        1648,
+        -528
+      ],
+      "id": "fbfb32a8-c62b-47c1-83a5-cd384f75121d",
+      "name": "Generate the Voice",
+      "credentials": {
+        "elevenLabsApi": {
+          "id": "B8HJxDhqcFhDL6kU",
+          "name": "ElevenLabs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{ $('Create the Call File').item.json.filePath }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        1872,
+        -528
+      ],
+      "id": "4759dfe4-b930-4ead-92be-238a9c2fd762",
+      "name": "Save the File"
+    },
+    {
+      "parameters": {
+        "resource": "call",
+        "from": "+1 647 277 2904",
+        "to": "4166695684",
+        "twiml": true,
+        "message": "=<Response>   \n<Play>{{ $('Create the Call File').item.json.publicUrl }}</Play> </Response>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        2096,
+        -528
+      ],
+      "id": "51176595-7219-497c-ae0f-d2c533f50999",
+      "name": "Make the Phone Call",
+      "credentials": {
+        "twilioApi": {
+          "id": "9SbqIqf6KUYdpZuw",
+          "name": "Twilio account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -32,
+        -528
+      ],
+      "id": "eded7f26-15e5-4d8a-a8b5-a8286e1a72a8",
+      "name": "Schedule Trigger"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Combine the Emails": {
+      "main": [
+        [
+          {
+            "node": "Build the Script",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get the Emails": {
+      "main": [
+        [
+          {
+            "node": "Combine the Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save the Emails": {
+      "main": [
+        [
+          {
+            "node": "Get the Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Emails From Gmail": {
+      "main": [
+        [
+          {
+            "node": "Save the Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build the Script": {
+      "main": [
+        [
+          {
+            "node": "Create the Call File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create the Call File": {
+      "main": [
+        [
+          {
+            "node": "Generate the Voice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate the Voice": {
+      "main": [
+        [
+          {
+            "node": "Save the File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save the File": {
+      "main": [
+        [
+          {
+            "node": "Make the Phone Call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Emails From Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "8da69e72-e6a5-4b46-b081-38cbdbf27176",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "487038707b640ff3b269901b77c36589df940a388b12d4bcb9a553864daa4723"
+  },
+  "id": "B8xrhYOFtDfjVqSw",
+  "tags": []
+}
