@@ -1,0 +1,1014 @@
+{
+  "name": "Berry Broke Baby - Price Scraper",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "id": "03ae043e-6cc6-4e4b-92ca-41e09eaa22d6",
+      "name": "Weekly Thursday Scrape",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        2672,
+        976
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 🍓 Berry Broke Baby — Price Scraper\n\n**How this works:**\n1. Every Thursday at 8am (when new flyers drop), this workflow fires\n2. Firecrawl community node batch-scrapes all grocery store berry pages\n3. AI (OpenAI) parses the scraped markdown into structured price JSON\n4. Data is stored in **n8n Data Tables** and served via webhook endpoints\n5. Berry alerts are checked and emailed to subscribers\n\n**Setup Required:**\n- Install the Firecrawl community node: `@mendable/n8n-nodes-firecrawl`\n- Add your Firecrawl API credential in n8n\n- Add your OpenAI credential\n- **Create Data Table: `berry_prices`** with columns:\n  `week` (text), `last_updated` (text), `stores_json` (text), `best_deal_json` (text), `total_prices_tracked` (number), `is_current` (text), `created_at` (text)\n- **Create Data Table: `berry_subscribers`** with columns:\n  `email` (text), `berry_types_json` (text), `max_price` (number), `subscribed_at` (text)\n- Select the Data Tables in each Data Table node after import!\n- (Optional) Add Gmail credential for alerts\n\n**Stores Tracked:**\nLoblaws · FreshCo · Longo's · No Frills · Food Basics · Walmart\n+ RedFlagDeals as a cross-store aggregator",
+        "height": 620,
+        "width": 520,
+        "color": 6
+      },
+      "id": "53d93ec0-8320-442c-89e8-65860af80df3",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2192,
+        672
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 📡 API Endpoints\n\n**GET** `/webhook/berry-prices/current`\nReturns this week's prices\n\n**GET** `/webhook/berry-prices/history`\nReturns up to 12 weeks of price history\n\n**POST** `/webhook/berry-alerts/subscribe`\nBody: `{ email, berryTypes, maxPrice }`\n\n**GET** `/webhook/berry-prices/refresh`\nManually trigger a fresh scrape",
+        "height": 320,
+        "width": 360,
+        "color": 4
+      },
+      "id": "4a3a0b63-abcf-4d94-bea7-8a6cc4f775a9",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2192,
+        1184
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 🛒 Store URLs\n\nEdit the Code node \"Build Scrape URLs\"\nto add/remove stores.\n\nEach store needs:\n- `url` — the berry category or flyer page\n- `name` — display name\n- `slug` — lowercase identifier\n- `color` — hex brand color\n- `flyerUrl` — link for users",
+        "height": 240,
+        "width": 300,
+        "color": 5
+      },
+      "id": "42352c8f-6403-4377-ac92-271285b80b82",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2736,
+        672
+      ]
+    },
+    {
+      "parameters": {
+        "path": "berry-prices/refresh",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "6c00d994-4b77-4e8d-a8bc-02115c37fba5",
+      "name": "Manual Refresh",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        2672,
+        1184
+      ],
+      "webhookId": "berry-prices-refresh"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Define all store URLs to scrape for berry prices\n// Using flyer aggregator sites for better scraping reliability\nconst stores = [\n  {\n    url: 'https://www.loblaws.ca/en/food/fruits-vegetables/fresh-fruits/berries-cherries/c/29725',\n    name: 'Loblaws',\n    slug: 'loblaws',\n    color: '#DC2626',\n    flyerUrl: 'https://www.loblaws.ca/en/food/fruits-vegetables/fresh-fruits/berries-cherries/c/29725'\n  },\n  {\n    url: 'https://www.flyers-on-line.com/freshco/ontario',\n    name: 'FreshCo',\n    slug: 'freshco',\n    color: '#16A34A',\n    flyerUrl: 'https://www.freshco.com/flyer'\n  },\n  {\n    url: 'https://www.flyerca.com/longos-sales/',\n    name: \"Longo's\",\n    slug: 'longos',\n    color: '#7F1D1D',\n    flyerUrl: 'https://www.longos.com/flyers'\n  },\n  {\n    url: 'https://www.nofrills.ca/en/food/fruits-vegetables/fresh-fruits/berries-cherries/c/29725',\n    name: 'No Frills',\n    slug: 'nofrills',\n    color: '#FFD700',\n    flyerUrl: 'https://www.nofrills.ca/en/food/fruits-vegetables/fresh-fruits/berries-cherries/c/29725'\n  },\n  {\n    url: 'https://www.flyers-on-line.com/food-basics',\n    name: 'Food Basics',\n    slug: 'foodbasics',\n    color: '#FF6B00',\n    flyerUrl: 'https://www.foodbasics.ca/flyer'\n  },\n  {\n    url: 'https://www.flyers-on-line.com/walmart/ontario',\n    name: 'Walmart',\n    slug: 'walmart',\n    color: '#0071CE',\n    flyerUrl: 'https://www.walmart.ca/browse/fruits-vegetables/berries/10019-20002-31000'\n  },\n  {\n    url: 'https://www.redflagdeals.com/flyers/search/?q=berries',\n    name: 'RedFlagDeals',\n    slug: 'rfd',\n    color: '#CC0000',\n    flyerUrl: 'https://www.redflagdeals.com/flyers/'\n  }\n];\n\nreturn stores.map(store => ({ json: store }));"
+      },
+      "id": "cdceee5c-7e6c-4377-88e8-fcc4fb0faca8",
+      "name": "Build Scrape URLs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2960,
+        1072
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "scrape",
+        "url": "={{ $json.url }}",
+        "requestOptions": {}
+      },
+      "id": "d512b422-f08e-4c61-9e23-0d7c9729e8e6",
+      "name": "Firecrawl Scrape",
+      "type": "@mendable/n8n-nodes-firecrawl.firecrawl",
+      "typeVersion": 1,
+      "position": [
+        3200,
+        1072
+      ],
+      "credentials": {
+        "firecrawlApi": {
+          "id": "dHv0Nz6cQpJ7vDc5",
+          "name": "Firecrawl account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Collect all scraped results and pair with store metadata\nconst allItems = $input.all();\nconst storeUrls = $('Build Scrape URLs').all();\n\nlet combinedContent = '';\nconst storeMetadata = [];\n\nfor (let i = 0; i < allItems.length; i++) {\n  const store = storeUrls[i]?.json || { name: `Store ${i}` };\n  const markdown = allItems[i]?.json?.markdown \n    || allItems[i]?.json?.data?.markdown \n    || allItems[i]?.json?.content\n    || 'No content scraped';\n  \n  storeMetadata.push({\n    name: store.name,\n    slug: store.slug,\n    color: store.color,\n    flyerUrl: store.flyerUrl\n  });\n  \n  // Trim each store's content to avoid hitting AI token limits\n  combinedContent += `\\n\\n=== ${store.name} (${store.url}) ===\\n${markdown.substring(0, 8000)}`;\n}\n\nreturn [{\n  json: {\n    scrapedContent: combinedContent,\n    storeMetadata: storeMetadata,\n    scrapeTimestamp: new Date().toISOString(),\n    storesScraped: storeMetadata.length\n  }\n}];"
+      },
+      "id": "f9b22efe-2615-4dd7-9870-87a10676e065",
+      "name": "Combine Scrape Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3440,
+        1072
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse AI response and build final structured data\nconst aiResponse = $input.first().json;\nconst formatNode = $('Combine Scrape Results').first().json;\nconst storeMetadata = formatNode.storeMetadata;\nconst scrapeTimestamp = formatNode.scrapeTimestamp;\n\n// Parse the AI output\nlet parsedPrices;\ntry {\n  const responseText = aiResponse.output?.[0]?.content?.[0]?.text || aiResponse.message?.content || aiResponse.text || aiResponse.content || JSON.stringify(aiResponse);\n\n  const jsonMatch = responseText.match(/\\{[\\s\\S]*\\}/);\n  parsedPrices = JSON.parse(jsonMatch ? jsonMatch[0] : responseText);\n} catch (e) {\n  return [{ json: { error: 'Failed to parse AI response', raw: String(aiResponse).substring(0, 500), message: e.message } }];\n}\n\n// Calculate current week range (Thu-Wed)\nconst now = new Date();\nconst dayOfWeek = now.getDay();\nconst thursday = new Date(now);\nthursday.setDate(now.getDate() - ((dayOfWeek + 3) % 7));\nconst wednesday = new Date(thursday);\nwednesday.setDate(thursday.getDate() + 6);\nconst months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];\nconst weekLabel = `${months[thursday.getMonth()]} ${thursday.getDate()}-${wednesday.getDate()}, ${thursday.getFullYear()}`;\n\nfunction getEmoji(t) {\n  t = t.toLowerCase();\n  if (t.includes('strawberr')) return '🍓';\n  if (t.includes('blueberr')) return '🫐';\n  if (t.includes('blackberr')) return '🍇';\n  if (t.includes('raspberr')) return '🔴';\n  if (t.includes('cranberr')) return '🔴';\n  if (t.includes('mixed')) return '🫐';\n  return '🍓';\n}\n\n// Merge AI-parsed prices with store metadata\nconst stores = (parsedPrices.stores || []).map(aiStore => {\n  const meta = storeMetadata.find(m =>\n    m.name.toLowerCase().replace(/[^a-z]/g, '').includes(aiStore.name.toLowerCase().replace(/[^a-z]/g, '')) ||\n    aiStore.name.toLowerCase().replace(/[^a-z]/g, '').includes(m.name.toLowerCase().replace(/[^a-z]/g, ''))\n  ) || { name: aiStore.name, slug: aiStore.name.toLowerCase().replace(/[^a-z0-9]/g, ''), color: '#666', flyerUrl: '' };\n\n  return {\n    name: meta.name,\n    slug: meta.slug,\n    color: meta.color,\n    flyerUrl: meta.flyerUrl,\n    berries: (aiStore.berries || []).map(b => ({\n      type: b.type,\n      emoji: getEmoji(b.type),\n      unit: b.unit || 'each',\n      price: Number(b.price),\n      wasPrice: b.wasPrice ? Number(b.wasPrice) : null,\n      onSale: Boolean(b.onSale),\n      source: b.source || 'website'\n    }))\n  };\n}).filter(s => s.slug !== 'rfd' && s.slug !== 'redflagdeals');\n\n// Find best deal\nlet bestDeal = null;\nlet lowestPrice = Infinity;\nfor (const store of stores) {\n  for (const berry of store.berries) {\n    if (berry.price > 0 && berry.price < lowestPrice) {\n      lowestPrice = berry.price;\n      bestDeal = {\n        store: store.name,\n        berry: berry.type,\n        emoji: berry.emoji,\n        price: berry.price,\n        unit: berry.unit,\n        savings: berry.wasPrice\n          ? `Save $${(berry.wasPrice - berry.price).toFixed(2)}`\n          : 'Cheapest option this week'\n      };\n    }\n  }\n}\n\nreturn [{ json: {\n  week: weekLabel,\n  lastUpdated: scrapeTimestamp,\n  stores,\n  bestDeal,\n  totalPricesTracked: stores.reduce((sum, s) => sum + s.berries.length, 0)\n}}];"
+      },
+      "id": "b5ebb637-a671-4cd2-8109-012f244b51e5",
+      "name": "Build Final Price Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4288,
+        1072
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Store current week + append to history using n8n Data Table\nconst currentData = $input.first().json;\nconst now = new Date();\n\nreturn [{ json: {\n  week: currentData.week,\n  last_updated: currentData.lastUpdated,\n  stores_json: JSON.stringify(currentData.stores),\n  best_deal_json: JSON.stringify(currentData.bestDeal),\n  total_prices_tracked: currentData.totalPricesTracked,\n  is_current: 'true',\n  created_at: now.toISOString()\n}}];"
+      },
+      "id": "0bb4927b-317d-41f1-926f-9eeef4a4a8f4",
+      "name": "Store Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4528,
+        1072
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Check berry alerts using data from the data table\nconst currentData = $('Build Final Price Data').first().json;\nconst subscriberItems = $('Get Subscribers From Table').all();\n\nif (!subscriberItems || subscriberItems.length === 0 || !subscriberItems[0].json.email) {\n  return [{ json: { message: 'No subscribers yet', alertsSent: 0 } }];\n}\n\nconst subscribers = subscriberItems.map(item => ({\n  email: item.json.email,\n  berryTypes: JSON.parse(item.json.berry_types_json || '[]'),\n  maxPrice: Number(item.json.max_price)\n}));\n\nconst alerts = [];\nfor (const sub of subscribers) {\n  for (const store of currentData.stores) {\n    for (const berry of store.berries) {\n      const match = sub.berryTypes.some(bt =>\n        berry.type.toLowerCase().includes(bt.toLowerCase())\n      );\n      if (match && berry.price <= sub.maxPrice) {\n        alerts.push({\n          email: sub.email,\n          berry: berry.type,\n          emoji: berry.emoji,\n          price: berry.price,\n          unit: berry.unit,\n          store: store.name,\n          maxPrice: sub.maxPrice\n        });\n      }\n    }\n  }\n}\n\nif (alerts.length === 0) {\n  return [{ json: { message: 'No alerts triggered this week', subscriberCount: subscribers.length } }];\n}\n\nreturn alerts.map(a => ({ json: a }));"
+      },
+      "id": "7cedc512-4059-4c44-a71d-a2f5e7ef778e",
+      "name": "Check Berry Alerts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4528,
+        1280
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "has-email",
+              "leftValue": "={{ $json.email }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "02ed2c75-6f52-401b-af78-52ef28e66f40",
+      "name": "Has Alerts?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        4752,
+        1280
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.email }}",
+        "subject": "={{ $json.emoji }} Berry Alert! {{ $json.berry }} at {{ $json.store }} — ${{ $json.price }}/{{ $json.unit }}",
+        "message": "=<div style=\"font-family:system-ui,sans-serif;max-width:480px;margin:0 auto;padding:24px\">\n<h1 style=\"color:#7C3AED;margin:0\">🍓 Berry Broke Baby Alert!</h1>\n<p style=\"font-size:16px;color:#555\">Good news for your wallet (and your baby's berry addiction):</p>\n<div style=\"background:#F0FDF4;border:2px solid #16A34A;border-radius:16px;padding:24px;text-align:center;margin:16px 0\">\n<p style=\"font-size:20px;font-weight:bold;margin:0\">{{ $json.emoji }} {{ $json.berry }}</p>\n<p style=\"font-size:40px;font-weight:900;color:#16A34A;margin:8px 0\">${{ $json.price }}/{{ $json.unit }}</p>\n<p style=\"font-size:14px;color:#666;margin:0\">at <strong>{{ $json.store }}</strong></p>\n</div>\n<p>This is below your alert threshold of ${{ $json.maxPrice }}. Time to panic-buy responsibly. 🛒</p>\n<hr style=\"border:none;border-top:1px solid #eee;margin:24px 0\">\n<p style=\"color:#999;font-size:11px\">Berry Broke Baby™ — Built by a parent who once had an existential crisis in a Costco parking lot over berry prices.</p>\n</div>",
+        "options": {}
+      },
+      "id": "a5c99ca2-b850-476e-9ac6-07c4c494c63a",
+      "name": "Send Alert Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        4960,
+        1216
+      ],
+      "webhookId": "6371015b-4a57-419d-9a8f-f39bd97cd539",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "yytgk9cpAHYuY2zS",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "path": "berry-prices/current",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "5c6edf38-701d-436f-87e1-d49e69bb8fcd",
+      "name": "GET Current Prices",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        2672,
+        1472
+      ],
+      "webhookId": "berry-prices-current"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Read current week data from the berry_prices data table\nconst items = $input.all();\n\nif (!items || items.length === 0 || !items[0].json.week) {\n  return [{ json: {\n    error: true,\n    message: 'Our berry radar is down. Probably got eaten by a toddler. Try again after Thursday.',\n    week: null, stores: [], bestDeal: null\n  }}];\n}\n\nconst row = items[0].json;\n\ntry {\n  return [{ json: {\n    week: row.week,\n    lastUpdated: row.last_updated,\n    stores: JSON.parse(row.stores_json || '[]'),\n    bestDeal: JSON.parse(row.best_deal_json || 'null'),\n    totalPricesTracked: row.total_prices_tracked || 0\n  }}];\n} catch(e) {\n  return [{ json: {\n    error: true,\n    message: 'Berry data is corrupted. A toddler probably mashed the keyboard. Try refreshing.',\n    week: null, stores: [], bestDeal: null\n  }}];\n}"
+      },
+      "id": "9180ccf2-7296-41d5-9bd7-bea651ab370c",
+      "name": "Read Current Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3008,
+        1472
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "eadb56d7-97ca-4371-a382-41cf8014e388",
+      "name": "Respond Current",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        3248,
+        1472
+      ]
+    },
+    {
+      "parameters": {
+        "path": "berry-prices/history",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "369d5329-9fe6-4ad6-a19e-3c49d19af1b5",
+      "name": "GET Price History",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        2672,
+        1680
+      ],
+      "webhookId": "berry-prices-history"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Read history from berry_prices data table\nconst items = $input.all();\n\nif (!items || items.length === 0 || !items[0].json.week) {\n  return [{ json: { history: [] } }];\n}\n\nconst history = items.map(item => {\n  const row = item.json;\n  try {\n    const stores = JSON.parse(row.stores_json || '[]');\n    return {\n      week: row.week,\n      date: row.last_updated,\n      stores: stores.map(s => ({\n        name: s.name,\n        berries: (s.berries || []).map(b => ({ type: b.type, price: b.price, onSale: b.onSale }))\n      }))\n    };\n  } catch(e) {\n    return null;\n  }\n}).filter(Boolean);\n\nreturn [{ json: { history } }];"
+      },
+      "id": "7ac23f7b-da3a-4d95-b6f8-e6448a269200",
+      "name": "Read History Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3008,
+        1680
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "3769a442-c758-42f9-8e8b-e0c15430fa12",
+      "name": "Respond History",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        3248,
+        1680
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "berry-alerts/subscribe",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "0be141ce-0585-4c54-91a3-9bc8c81b29c9",
+      "name": "POST Subscribe",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        2672,
+        1872
+      ],
+      "webhookId": "berry-alerts-subscribe"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare subscriber data for upsert to berry_subscribers data table\nconst body = $input.first().json.body || $input.first().json;\nconst { email, berryTypes, maxPrice } = body;\n\nif (!email || !berryTypes || !maxPrice) {\n  return [{ json: { success: false, message: 'Missing required fields: email, berryTypes, maxPrice' } }];\n}\n\nreturn [{ json: {\n  email: email,\n  berry_types_json: JSON.stringify(berryTypes),\n  max_price: Number(maxPrice),\n  subscribed_at: new Date().toISOString()\n}}];"
+      },
+      "id": "5e1b5a8e-1a3c-42f1-a3f8-d042a964da33",
+      "name": "Save Subscriber",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2960,
+        1872
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "66c9553e-0785-4b36-9b3f-13ae940a6e01",
+      "name": "Respond Subscribe",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        3488,
+        1872
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "chatgpt-4o-latest",
+          "mode": "list",
+          "cachedResultName": "CHATGPT-4O-LATEST"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are a grocery price data extraction expert. You receive scraped content from multiple grocery store websites/flyers. Extract ALL berry pricing and return clean structured JSON.\n\nBerry types to find: Strawberries, Blueberries, Raspberries, Blackberries, Mixed Berries, Cranberries\n\nFor each berry extract:\n- type: berry name (e.g. \"Blueberries\")\n- price: current price as a number\n- wasPrice: original price if on sale, else null\n- onSale: boolean\n- unit: measurement (e.g. \"per lb\", \"half pint (170g)\", \"1 lb (454g)\", \"1 pint\", \"6 oz\", \"340g pkg\")\n- source: \"website\" or \"flyer\"\n\nRules:\n- Return ONLY valid JSON, no markdown fences, no explanation\n- If you see \"sale\" or crossed-out price, set onSale: true and capture both prices\n- Normalize names: \"Blueberries Half Pint\" → type: \"Blueberries\", unit: \"half pint (170g)\"\n- Organic variants: append \"(Organic)\" to type\n- No berries found for a store → empty berries array\n- Prices must be numbers, not strings\n- Do NOT include non-berry fruits (grapes, cherries, etc.)\n- For RedFlagDeals data, attribute prices to the correct store if mentioned"
+            },
+            {
+              "content": "=Extract all berry prices from this scraped grocery store content. Return ONLY valid JSON in this schema:\n\n{\"stores\":[{\"name\":\"Store Name\",\"berries\":[{\"type\":\"Blueberries\",\"price\":3.49,\"wasPrice\":null,\"onSale\":false,\"unit\":\"per lb\",\"source\":\"website\"}]}]}\n\nScraped content:\n\n{{ $json.scrapedContent }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        3648,
+        1072
+      ],
+      "id": "13840b82-a941-4920-80ed-650dcc91a805",
+      "name": "AI Parse Berry Prices",
+      "credentials": {
+        "openAiApi": {
+          "id": "VAztdGuSQn755XI1",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "oFdLZMIScxMRqU0G",
+          "mode": "list",
+          "cachedResultName": "berry_prices",
+          "cachedResultUrl": "/projects/3VxMb7DnyLexjS3H/datatables/oFdLZMIScxMRqU0G"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "week",
+              "keyValue": "={{ $json.week }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "week",
+              "displayName": "week",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "last_updated",
+              "displayName": "last_updated",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "stores_json",
+              "displayName": "stores_json",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "best_deal_json",
+              "displayName": "best_deal_json",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "total_prices_tracked",
+              "displayName": "total_prices_tracked",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "is_current",
+              "displayName": "is_current",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "abf29942-bb45-419a-80b9-4128ac7c2ac7",
+      "name": "Upsert Price Row",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        4768,
+        1072
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "oFdLZMIScxMRqU0G",
+          "mode": "list",
+          "cachedResultName": "berry_prices",
+          "cachedResultUrl": "/projects/3VxMb7DnyLexjS3H/datatables/oFdLZMIScxMRqU0G"
+        },
+        "limit": 1
+      },
+      "id": "b4caabdc-9882-4e15-ad81-d26134c601ba",
+      "name": "Get Current From Table",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        2816,
+        1472
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "oFdLZMIScxMRqU0G",
+          "mode": "list",
+          "cachedResultName": "berry_prices",
+          "cachedResultUrl": "/projects/3VxMb7DnyLexjS3H/datatables/oFdLZMIScxMRqU0G"
+        },
+        "limit": 12
+      },
+      "id": "f8791f75-2d49-41f0-b47d-e20d2a0691ed",
+      "name": "Get History From Table",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        2816,
+        1680
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "C6YhT3IF3BwGA9z4",
+          "mode": "list",
+          "cachedResultName": "berry_subscribers",
+          "cachedResultUrl": "/projects/3VxMb7DnyLexjS3H/datatables/C6YhT3IF3BwGA9z4"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "email",
+              "keyValue": "={{ $json.email }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "berry_types_json",
+              "displayName": "berry_types_json",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "max_price",
+              "displayName": "max_price",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "subscribed_at",
+              "displayName": "subscribed_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "505e64e1-e6f9-4c30-a3b5-0572f1e6e338",
+      "name": "Upsert Subscriber",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        3104,
+        1872
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: {\n  success: true,\n  message: \"Alert set! We'll ping you when berries drop below your target price. Your baby thanks you in advance. \\ud83c\\udf53\",\n}}];"
+      },
+      "id": "4c39b4fc-2911-42d2-aaaf-ca16db754594",
+      "name": "Format Subscribe Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3296,
+        1872
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "C6YhT3IF3BwGA9z4",
+          "mode": "list",
+          "cachedResultName": "berry_subscribers",
+          "cachedResultUrl": "/projects/3VxMb7DnyLexjS3H/datatables/C6YhT3IF3BwGA9z4"
+        },
+        "returnAll": true
+      },
+      "id": "e743dc0e-3d8e-45a9-89f1-ae886528d0f8",
+      "name": "Get Subscribers From Table",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        4288,
+        1280
+      ]
+    }
+  ],
+  "pinData": {
+    "Manual Refresh": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n.srv851239.hstgr.cloud",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36",
+            "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "accept-language": "en-US,en;q=0.9",
+            "cookie": "rl_page_init_referrer=RudderEncrypt%3AU2FsdGVkX1%2FRfi3IvdDpv2thSrhksl4JO8vlQY6fwM0%3D; rl_page_init_referring_domain=RudderEncrypt%3AU2FsdGVkX19TlCiDyyBp94olsJvcRfy0rLIFD%2BQgHPs%3D; rl_anonymous_id=RudderEncrypt%3AU2FsdGVkX19e9bCizjdXuGPwf4KIIR3T%2Fh2fgbNr%2FXLWupGZtv7SEjXeb7D9M1H79ehT8WxMPNWBP29oK2EuCA%3D%3D; rl_user_id=RudderEncrypt%3AU2FsdGVkX19kzohQTSWjjYkpLLIhsNvwHcvS02kqvhIHa9xzo4k%2FChxhchy4B2kMKR9jX5g1x7%2FkPX6lv3anVbHV7JUyaw9d%2FsRdhGM74Ljf4B5gdqngY4cS%2FRuQLHPfR0Hp1sim52EMgUh1MHX%2F4wh3298l2kFkKo%2Feei%2Brz4o%3D; rl_trait=RudderEncrypt%3AU2FsdGVkX1%2BqpYvhNEVdkfSLiJPVMk%2Fmw6dLsq%2Bfe%2Bs%2Fr7Rwfc11YX4Go25xo4CmHnDC5g30aUYyF1fKleYbb5YPEyy8BakRxYBOlgyn%2BeC3%2FaHCF0JxkVOVnFgxd8iZYmtEK1s6Qyx6jWxSgEIgw7V2Z%2FSlhTFAihp0aBBfJaw%3D; rl_session=RudderEncrypt%3AU2FsdGVkX181djIobtS9OPtL18oxlJp%2FuHo2ZBaHgzBPM%2FG7OTxKO99VcKJScA3F30LWlWPaeonM7N4NjSPDLB01evjlEqm%2BmUw3T4ivnXWWlAKYeOK9QzpoDCKRZDtf7twrD0vLa5YC84eJkH7lqA%3D%3D; ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog=%7B%22%24device_id%22%3A%22019c3b06-b113-7ef1-9358-f28c4a11a29b%22%2C%22distinct_id%22%3A%22487038707b640ff3b269901b77c36589df940a388b12d4bcb9a553864daa4723%23a1ff25fb-7a8e-4c5d-b20a-331dcd21b8d9%22%2C%22%24sesid%22%3A%5B1770688679381%2C%22019c4537-25c4-75c6-979b-6d28fb241ee0%22%2C1770687767990%5D%2C%22%24epp%22%3Atrue%2C%22%24initial_person_info%22%3A%7B%22r%22%3A%22%24direct%22%2C%22u%22%3A%22https%3A%2F%2Fn8n.srv851239.hstgr.cloud%2Fsignin%3Fredirect%3D%25252F%22%7D%7D",
+            "priority": "u=0, i",
+            "sec-ch-ua": "\"Not(A:Brand\";v=\"8\", \"Chromium\";v=\"144\", \"Google Chrome\";v=\"144\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "document",
+            "sec-fetch-mode": "navigate",
+            "sec-fetch-site": "none",
+            "sec-fetch-user": "?1",
+            "upgrade-insecure-requests": "1",
+            "x-forwarded-for": "172.18.0.1",
+            "x-forwarded-host": "n8n.srv851239.hstgr.cloud",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "a72fe8116620",
+            "x-real-ip": "172.18.0.1"
+          },
+          "params": {},
+          "query": {},
+          "body": {},
+          "webhookUrl": "https://n8n.srv851239.hstgr.cloud/webhook-test/berry-prices/refresh",
+          "executionMode": "test"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Weekly Thursday Scrape": {
+      "main": [
+        [
+          {
+            "node": "Build Scrape URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Refresh": {
+      "main": [
+        [
+          {
+            "node": "Build Scrape URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Scrape URLs": {
+      "main": [
+        [
+          {
+            "node": "Firecrawl Scrape",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Firecrawl Scrape": {
+      "main": [
+        [
+          {
+            "node": "Combine Scrape Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine Scrape Results": {
+      "main": [
+        [
+          {
+            "node": "AI Parse Berry Prices",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Final Price Data": {
+      "main": [
+        [
+          {
+            "node": "Store Data",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Subscribers From Table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Berry Alerts": {
+      "main": [
+        [
+          {
+            "node": "Has Alerts?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Alerts?": {
+      "main": [
+        [
+          {
+            "node": "Send Alert Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET Current Prices": {
+      "main": [
+        [
+          {
+            "node": "Get Current From Table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Current Data": {
+      "main": [
+        [
+          {
+            "node": "Respond Current",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET Price History": {
+      "main": [
+        [
+          {
+            "node": "Get History From Table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read History Data": {
+      "main": [
+        [
+          {
+            "node": "Respond History",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST Subscribe": {
+      "main": [
+        [
+          {
+            "node": "Save Subscriber",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Subscriber": {
+      "main": [
+        [
+          {
+            "node": "Upsert Subscriber",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Parse Berry Prices": {
+      "main": [
+        [
+          {
+            "node": "Build Final Price Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store Data": {
+      "main": [
+        [
+          {
+            "node": "Upsert Price Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Current From Table": {
+      "main": [
+        [
+          {
+            "node": "Read Current Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get History From Table": {
+      "main": [
+        [
+          {
+            "node": "Read History Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert Subscriber": {
+      "main": [
+        [
+          {
+            "node": "Format Subscribe Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Subscribe Response": {
+      "main": [
+        [
+          {
+            "node": "Respond Subscribe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Subscribers From Table": {
+      "main": [
+        [
+          {
+            "node": "Check Berry Alerts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true
+  },
+  "versionId": "e5b87a3f-e2bc-4ae8-9773-12db24158cf3",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "487038707b640ff3b269901b77c36589df940a388b12d4bcb9a553864daa4723"
+  },
+  "id": "fCCFfdPws5836aD2tLjBo",
+  "tags": [
+    {
+      "updatedAt": "2026-02-10T01:49:21.327Z",
+      "createdAt": "2026-02-10T01:49:21.327Z",
+      "id": "320pZzVAAWNn5QUd",
+      "name": "berry-broke-baby"
+    },
+    {
+      "updatedAt": "2026-02-10T01:49:21.344Z",
+      "createdAt": "2026-02-10T01:49:21.344Z",
+      "id": "WsmPDhbPhQU8HDN1",
+      "name": "scraping"
+    },
+    {
+      "updatedAt": "2026-02-10T01:49:21.346Z",
+      "createdAt": "2026-02-10T01:49:21.346Z",
+      "id": "nboqEXP59QLEshul",
+      "name": "firecrawl"
+    }
+  ]
+}
